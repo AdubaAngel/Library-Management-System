@@ -567,6 +567,72 @@ public class PublicLibrary implements Library {
         return true;
     }
 
+
+
+    public BorrowRecord findUnpaidRecord(int userId, int bookId) {
+        for (BorrowRecord record : borrowHistory) {
+            if (record.getUserId() == userId &&
+                    record.getBookId() == bookId &&
+                    record.getReturnDate() != null &&
+                    !record.isFeePaid() &&
+                    record.getLateFee() > 0) {
+                return record;
+            }
+        }
+        return null;
+    }
+
+    public List<BorrowRecord> getUserUnpaidRecords(int userId) {
+        List<BorrowRecord> unpaidRecords = new ArrayList<>();
+        for (BorrowRecord record : borrowHistory) {
+            if (record.getUserId() == userId &&
+                    record.getReturnDate() != null &&
+                    !record.isFeePaid() &&
+                    record.getLateFee() > 0) {
+                unpaidRecords.add(record);
+            }
+        }
+        return unpaidRecords;
+    }
+
+    public void setPaymentPlan(int userId, int bookId, int numberOfInstallments) {
+        BorrowRecord record = findUnpaidRecord(userId, bookId);
+        if (record != null && record.getLateFee() > 0) {
+            record.createPaymentPlan(numberOfInstallments);
+            System.out.println("✅ Payment plan created with " + numberOfInstallments + " installments");
+        } else {
+            System.out.println("❌ No unpaid record found for this book");
+        }
+    }
+
+    public void makeInstallmentPayment(int userId, int bookId, int installmentIndex) {
+        BorrowRecord record = findUnpaidRecord(userId, bookId);
+        if (record != null && !record.getInstallments().isEmpty()) {
+            LocalDate paymentDate = LocalDate.now();
+            LocalDate dueDate = record.getInstallments().get(installmentIndex).getDueDate();
+
+            record.makeInstallmentPayment(installmentIndex, paymentDate);
+
+            // Check if payment was late
+            if (paymentDate.isAfter(dueDate)) {
+                addInfraction(userId, 2);
+                System.out.println("⚠️ Late payment - infraction added");
+            }
+
+            System.out.println("✅ Installment payment recorded");
+        } else {
+            System.out.println("❌ No payment plan found for this book");
+        }
+    }
+
+    public double getTotalUnpaidFees(int userId) {
+        double total = 0.0;
+        for (BorrowRecord record : getUserUnpaidRecords(userId)) {
+            total += record.getOutstandingBalance();
+        }
+        return total;
+    }
+
     @Override
     public Collection<Book> getAllBooks() {
         return books.values();
