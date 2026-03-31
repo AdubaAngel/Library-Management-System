@@ -9,6 +9,8 @@ public class BorrowRecord {
     private LocalDate dueDate;
     private LocalDate returnDate;  // Changed to LocalDate for consistency
     private double lateFee;
+    private boolean feePaid;
+    private LocalDate paymentDate;
 
     // Constructor - only what you know at borrow time
     public BorrowRecord(int bookId, int userId, String bookName,
@@ -19,7 +21,9 @@ public class BorrowRecord {
         this.borrowDate = borrowDate;
         this.dueDate = dueDate;
         this.returnDate = null;  // Not returned yet
-        this.lateFee = 0.0;      // No fee yet
+        this.lateFee = 0.0;    // No fee yet
+        this.feePaid = false;
+        this.paymentDate = null;
     }
 
     // Getters
@@ -30,6 +34,10 @@ public class BorrowRecord {
     public LocalDate getDueDate() { return dueDate; }
     public LocalDate getReturnDate() { return returnDate; }
     public double getLateFee() { return lateFee; }
+    public boolean isFeePaid(){return false;}
+    public void setFeePaid(boolean feePaid){this.feePaid = feePaid;}
+    public LocalDate getPaymentDate(){ return paymentDate; }
+    public void setPaymentDate(LocalDate paymentDate){this.paymentDate = paymentDate;}
 
     // Check if book is currently overdue (not returned and past due date)
     public boolean isOverdue() {
