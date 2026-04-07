@@ -5,7 +5,8 @@ import java.time.format.DateTimeFormatter;
 public class Book {
     private String title;
     private String author;
-    private String isbn;  // Renamed from IBSN (typical naming)
+    private String isbn;// Renamed from IBSN (typical naming)
+    private int bookID;
     private boolean isAvailable;
     private LocalDate publicationDate;  // Just use this, remove publicationYear
     private LocalDate dueDate;
@@ -15,21 +16,27 @@ public class Book {
     //Next we will be back after working on a class to track the borrowing record of each book
 
     // Constructor - keep it simple
+    // Keep your original simple constructor
     Book(String title, String author, String isbn, LocalDate publicationDate) {
         this.title = title;
         this.author = author;
         this.isbn = isbn;
         this.publicationDate = publicationDate;
-        this.isAvailable = true;  // New books are available
+        this.isAvailable = true;
         this.dueDate = null;
         this.borrowDate = null;
         this.borrowedByUserId = null;
+        // bookID is NOT set here
     }
 
     // Alternative constructor for just year
     Book(String title, String author, String isbn, int publicationYear) {
         this(title, author, isbn, LocalDate.of(publicationYear, 1, 1));
     }
+
+    //getter and setter for bookID
+    public int getBookID() { return bookID; }
+    public void setBookID(int bookID) { this.bookID = bookID; }
 
     // Getters
     public String getTitle() { return title; }

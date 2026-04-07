@@ -36,7 +36,6 @@ public class PublicLibrary implements Library {
         this.employeeBaseLimit = employeeBaseLimit;
         this.userBaseLimit = userBaseLimit;
 
-        // Initialize ID counters based on role
         this.idIncrement = idIncrements;
         this.nextPatronId = startId;
         this.nextEmployeeId = startId + 4000;
@@ -65,6 +64,7 @@ public class PublicLibrary implements Library {
     @Override
     public int addBook(Book book) {
         int localId = nextBookId;
+        book.setBookID(localId);
         books.put(localId, book);
         nextBookId += idIncrements;
         return localId;
@@ -120,7 +120,6 @@ public class PublicLibrary implements Library {
         user.setUserStatus(UserStatus.PENDING_REGISTRATION);
         users.put(userId, user);
         System.out.println("📝 Pre-registered: " + name + " (ID: " + userId + ", Role: " + role + ")");
-        System.out.println("   Give this ID to the user to complete registration.");
         return user;
     }
 
@@ -135,9 +134,69 @@ public class PublicLibrary implements Library {
             return false;
         }
 
+        String email = user.getEmail();
+        String phone = user.getPhone();
+
+        if (!isValidEmail(email)) {
+            System.out.println("❌ Invalid email format!");
+            return false;
+        }
+
+        if (!isValidPhone(phone)) {
+            System.out.println("❌ Invalid phone number!");
+            return false;
+        }
+
         user.setPassword(password);
         user.setUserStatus(UserStatus.ACTIVE);
         System.out.println("✅ Registration complete for " + user.getName() + " (ID: " + userId + ")");
+        return true;
+    }
+
+    @Override
+    public boolean isValidEmail(String email) {
+        if (email == null || email.isEmpty()) {
+            return false;
+        }
+        if (!email.contains("@")) {
+            return false;
+        }
+        String[] parts = email.split("@");
+        if (parts.length != 2) {
+            return false;
+        }
+        String localPart = parts[0];
+        String domain = parts[1];
+        if (localPart.isEmpty()) {
+            return false;
+        }
+        if (!domain.contains(".")) {
+            return false;
+        }
+        String[] domainParts = domain.split("\\.");
+        if (domainParts.length < 2) {
+            return false;
+        }
+        for (String part : domainParts) {
+            if (part.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean isValidPhone(String phone) {
+        if (phone == null || phone.isEmpty()) {
+            return false;
+        }
+        String cleanPhone = phone.replaceAll("[^0-9]", "");
+        if (cleanPhone.isEmpty()) {
+            return false;
+        }
+        if (cleanPhone.length() < 10 || cleanPhone.length() > 15) {
+            return false;
+        }
         return true;
     }
 
@@ -188,7 +247,6 @@ public class PublicLibrary implements Library {
 
     @Override
     public int registerUser(User user) {
-        // Legacy method - now use preRegisterUser and completeRegistration
         int userId = generateIdForRole(user.getRole());
         user.setId(userId);
         user.setUserStatus(UserStatus.ACTIVE);
@@ -216,13 +274,11 @@ public class PublicLibrary implements Library {
             return null;
         }
 
-        // Check if user is suspended
         if (user.isCurrentlySuspended()) {
             System.out.println("❌ " + user.getName() + " is suspended until " + user.getSuspensionEndDate());
             return null;
         }
 
-        // Check if user is terminated
         if (user.isTerminated()) {
             System.out.println("❌ " + user.getName() + " has been terminated!");
             return null;
@@ -277,7 +333,6 @@ public class PublicLibrary implements Library {
         Book book = books.get(bookId);
         User user = users.get(userId);
 
-        // Check if book is overdue
         boolean wasOverdue = LocalDate.now().isAfter(activeLoan.getDueDate());
 
         if (wasOverdue) {
@@ -366,7 +421,6 @@ public class PublicLibrary implements Library {
     }
 
     private void initializeRoleRules() {
-        // Borrowing rules
         maxBooksByRole.put(UserRole.PATRON, 7);
         maxBooksByRole.put(UserRole.GUEST, 2);
         maxBooksByRole.put(UserRole.EMPLOYEE, 10);
@@ -388,7 +442,6 @@ public class PublicLibrary implements Library {
         lateFeeByRole.put(UserRole.JUNIOR_EMPLOYEE, 0.15);
         lateFeeByRole.put(UserRole.VOLUNTEER, 0.10);
 
-        // Infraction limits
         infractionLimitByRole.put(UserRole.PATRON, userBaseLimit);
         infractionLimitByRole.put(UserRole.GUEST, userBaseLimit - 5);
         infractionLimitByRole.put(UserRole.EMPLOYEE, employeeBaseLimit);
@@ -512,6 +565,72 @@ public class PublicLibrary implements Library {
             return false;
         }
         return true;
+    }
+
+
+
+    public BorrowRecord findUnpaidRecord(int userId, int bookId) {
+        for (BorrowRecord record : borrowHistory) {
+            if (record.getUserId() == userId &&
+                    record.getBookId() == bookId &&
+                    record.getReturnDate() != null &&
+                    !record.isFeePaid() &&
+                    record.getLateFee() > 0) {
+                return record;
+            }
+        }
+        return null;
+    }
+
+    public List<BorrowRecord> getUserUnpaidRecords(int userId) {
+        List<BorrowRecord> unpaidRecords = new ArrayList<>();
+        for (BorrowRecord record : borrowHistory) {
+            if (record.getUserId() == userId &&
+                    record.getReturnDate() != null &&
+                    !record.isFeePaid() &&
+                    record.getLateFee() > 0) {
+                unpaidRecords.add(record);
+            }
+        }
+        return unpaidRecords;
+    }
+
+    public void setPaymentPlan(int userId, int bookId, int numberOfInstallments) {
+        BorrowRecord record = findUnpaidRecord(userId, bookId);
+        if (record != null && record.getLateFee() > 0) {
+            record.createPaymentPlan(numberOfInstallments);
+            System.out.println("✅ Payment plan created with " + numberOfInstallments + " installments");
+        } else {
+            System.out.println("❌ No unpaid record found for this book");
+        }
+    }
+
+    public void makeInstallmentPayment(int userId, int bookId, int installmentIndex) {
+        BorrowRecord record = findUnpaidRecord(userId, bookId);
+        if (record != null && !record.getInstallments().isEmpty()) {
+            LocalDate paymentDate = LocalDate.now();
+            LocalDate dueDate = record.getInstallments().get(installmentIndex).getDueDate();
+
+            record.makeInstallmentPayment(installmentIndex, paymentDate);
+
+            // Check if payment was late
+            if (paymentDate.isAfter(dueDate)) {
+                addInfraction(userId, 2);
+                System.out.println("⚠️ Late payment - infraction added");
+            }
+
+            System.out.println("✅ Installment payment recorded");
+        } else {
+            System.out.println("❌ No payment plan found for this book");
+        }
+    }
+
+    public double getTotalUnpaidFees(int userId) {
+        double total = 0.0;
+        for (BorrowRecord record : getUserUnpaidRecords(userId)) {
+            total += record.getOutstandingBalance();
+        }
+        return total;
     }
 
     @Override

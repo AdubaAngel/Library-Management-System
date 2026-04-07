@@ -37,4 +37,8 @@ public interface Library {
     boolean hasPermission(int userId, String action);
     boolean canViewUserInfo(int viewerId, int targetUserId);
     boolean canChangeUserRole(int managerId, int targetUserId, UserRole newRole);
+
+    // Validation methods
+    boolean isValidEmail(String email);
+    boolean isValidPhone(String phone);
 }

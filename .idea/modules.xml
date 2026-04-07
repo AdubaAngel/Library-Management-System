@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/src/Databasestorage/Databasestorage.iml" filepath="$PROJECT_DIR$/src/Databasestorage/Databasestorage.iml" />
+      <module fileurl="file://$PROJECT_DIR$/src/GUI/GUI.iml" filepath="$PROJECT_DIR$/src/GUI/GUI.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/Library Management.iml" filepath="$PROJECT_DIR$/.idea/Library Management.iml" />
       <module fileurl="file://$PROJECT_DIR$/src/Databasestorage/data/data.iml" filepath="$PROJECT_DIR$/src/Databasestorage/data/data.iml" />
       <module fileurl="file://$PROJECT_DIR$/src/src.iml" filepath="$PROJECT_DIR$/src/src.iml" />
